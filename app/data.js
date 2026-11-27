@@ -1,154 +1,160 @@
-// NusaData — seluruh angka statistik Indonesia yang ditampilkan situs ini.
-// Setiap seri mencantumkan sumber dan tahunnya; tidak ada angka karangan.
-// Sumber utama: Badan Pusat Statistik (BPS), Sensus Penduduk 2020,
-// Sakernas, Susenas, dan Survei Kesehatan Indonesia (SKI) Kemenkes.
+// NusaData — semua angka situs. Sumber: BPS (Sensus Penduduk, Proyeksi Penduduk,
+// Sakernas, Susenas, SSGI) kecuali dinyatakan lain. Angka dibulatkan ke satu desimal;
+// "—" berarti angka tidak ditampilkan karena tidak diyakini, bukan nol.
 
-const NUSADATA = {
-  // Kartu angka utama di beranda.
-  headline: [
-    { label: "Penduduk Indonesia", value: "281,6 juta", note: "Pertengahan 2024 · Proyeksi BPS" },
-    { label: "Pertumbuhan Ekonomi", value: "5,03%", note: "PDB 2024 · BPS" },
-    { label: "Inflasi Tahunan", value: "1,57%", note: "Desember 2024 · BPS" },
-    { label: "Kemiskinan", value: "9,03%", note: "Maret 2024 · BPS" },
-    { label: "Pengangguran (TPT)", value: "4,82%", note: "Februari 2024 · Sakernas BPS" },
-    { label: "Indeks Pembangunan Manusia", value: "75,02", note: "2024 · BPS" },
-  ],
+export const KPIS = [
+  { label: "Penduduk", value: "281,6", unit: "juta", src: "Pertengahan 2024, Proyeksi BPS" },
+  { label: "Pertumbuhan ekonomi", value: "5,03", unit: "%", src: "PDB 2024, BPS" },
+  { label: "Inflasi", value: "1,57", unit: "%", src: "Desember 2024, BPS" },
+  { label: "Kemiskinan", value: "9,03", unit: "%", src: "Maret 2024, BPS" },
+  { label: "Pengangguran (TPT)", value: "4,82", unit: "%", src: "Februari 2024, Sakernas BPS" },
+  { label: "IPM", value: "75,02", unit: "", src: "2024, BPS" },
+];
 
-  // Jumlah penduduk hasil sensus dan proyeksi, juta jiwa.
-  populationSeries: [
-    { year: 1971, value: 119.21, kind: "Sensus" },
-    { year: 1980, value: 147.49, kind: "Sensus" },
-    { year: 1990, value: 179.38, kind: "Sensus" },
-    { year: 2000, value: 206.26, kind: "Sensus" },
-    { year: 2010, value: 237.64, kind: "Sensus" },
-    { year: 2015, value: 255.18, kind: "SUPAS" },
-    { year: 2020, value: 270.20, kind: "Sensus" },
-    { year: 2024, value: 281.60, kind: "Proyeksi" },
-  ],
+// Penduduk Indonesia, juta jiwa. 1971–2020 sensus; 2015 SUPAS; 2024 proyeksi.
+export const POPULATION = [
+  { year: 1971, value: 119.2 }, { year: 1980, value: 147.5 },
+  { year: 1990, value: 179.4 }, { year: 2000, value: 206.3 },
+  { year: 2010, value: 237.6 }, { year: 2015, value: 255.5 },
+  { year: 2020, value: 270.2 }, { year: 2024, value: 281.6 },
+];
 
-  // Struktur umur Sensus Penduduk 2020, juta jiwa.
-  ageStructure2020: [
-    { group: "0–14 tahun", value: 63.0 },
-    { group: "15–64 tahun", value: 191.1 },
-    { group: "65 tahun ke atas", value: 16.1 },
-  ],
+// Lima provinsi terpadat, juta jiwa, Sensus Penduduk 2020.
+export const TOP_PROVINCES = [
+  { name: "Jawa Barat", value: 48.3 },
+  { name: "Jawa Timur", value: 40.7 },
+  { name: "Jawa Tengah", value: 36.5 },
+  { name: "Sumatera Utara", value: 14.8 },
+  { name: "Banten", value: 11.9 },
+];
 
-  demographyFacts: [
-    { label: "Rasio jenis kelamin", value: "102", note: "102 laki-laki per 100 perempuan · SP2020" },
-    { label: "Rasio ketergantungan", value: "41,9", note: "Penduduk non-produktif per 100 produktif · SP2020" },
-    { label: "Tinggal di perkotaan", value: "56,6%", note: "Dari seluruh penduduk · SP2020" },
-    { label: "Kepadatan penduduk", value: "141 jiwa/km²", note: "SP2020" },
-    { label: "Jumlah rumah tangga", value: "68,7 juta", note: "Rata-rata 3,9 orang per rumah tangga · SP2020" },
-    { label: "Angka kelahiran total (TFR)", value: "2,18", note: "Anak per perempuan · Long Form SP2020" },
-  ],
+// Struktur umur 2020, juta jiwa dan pangsa, Sensus Penduduk 2020.
+export const AGE_STRUCTURE = [
+  { label: "0–14 tahun", value: 63.0, share: "23,3%", color: "#f2a93b" },
+  { label: "15–64 tahun", value: 191.1, share: "70,7%", color: "#0f4c4a" },
+  { label: "65+ tahun", value: 16.1, share: "6,0%", color: "#7fb3ae" },
+];
 
-  // Penduduk per provinsi, Sensus Penduduk 2020, juta jiwa (34 provinsi saat sensus).
-  provinces2020: [
-    { name: "Aceh", value: 5.27 }, { name: "Sumatera Utara", value: 14.80 },
-    { name: "Sumatera Barat", value: 5.53 }, { name: "Riau", value: 6.49 },
-    { name: "Jambi", value: 3.55 }, { name: "Sumatera Selatan", value: 8.47 },
-    { name: "Bengkulu", value: 2.01 }, { name: "Lampung", value: 9.01 },
-    { name: "Kep. Bangka Belitung", value: 1.46 }, { name: "Kep. Riau", value: 2.06 },
-    { name: "DKI Jakarta", value: 10.56 }, { name: "Jawa Barat", value: 48.27 },
-    { name: "Jawa Tengah", value: 36.52 }, { name: "DI Yogyakarta", value: 3.67 },
-    { name: "Jawa Timur", value: 40.67 }, { name: "Banten", value: 11.90 },
-    { name: "Bali", value: 4.32 }, { name: "Nusa Tenggara Barat", value: 5.32 },
-    { name: "Nusa Tenggara Timur", value: 5.33 }, { name: "Kalimantan Barat", value: 5.41 },
-    { name: "Kalimantan Tengah", value: 2.67 }, { name: "Kalimantan Selatan", value: 4.07 },
-    { name: "Kalimantan Timur", value: 3.77 }, { name: "Kalimantan Utara", value: 0.70 },
-    { name: "Sulawesi Utara", value: 2.62 }, { name: "Sulawesi Tengah", value: 2.99 },
-    { name: "Sulawesi Selatan", value: 9.07 }, { name: "Sulawesi Tenggara", value: 2.62 },
-    { name: "Gorontalo", value: 1.17 }, { name: "Sulawesi Barat", value: 1.42 },
-    { name: "Maluku", value: 1.85 }, { name: "Maluku Utara", value: 1.28 },
-    { name: "Papua Barat", value: 1.13 }, { name: "Papua", value: 4.30 },
-  ],
+export const DEMOGRAPHY = [
+  { label: "Rasio jenis kelamin", value: "102", note: "102 laki-laki per 100 perempuan (2020)" },
+  { label: "Rasio ketergantungan", value: "41,9", note: "Setiap 100 penduduk usia kerja menanggung ~42 penduduk non-kerja (2020)" },
+  { label: "Laju tumbuh penduduk", value: "1,25%/thn", note: "Periode 2010–2020, turun dari 1,49%/thn pada 2000–2010" },
+  { label: "Penduduk usia produktif", value: "70,7%", note: "191,1 juta jiwa berusia 15–64 tahun (2020) — jendela bonus demografi" },
+];
 
-  // Pertumbuhan PDB tahunan, persen (BPS).
-  gdpGrowth: [
-    { year: 2015, value: 4.88 }, { year: 2016, value: 5.03 },
-    { year: 2017, value: 5.07 }, { year: 2018, value: 5.17 },
-    { year: 2019, value: 5.02 }, { year: 2020, value: -2.07 },
-    { year: 2021, value: 3.69 }, { year: 2022, value: 5.31 },
-    { year: 2023, value: 5.05 }, { year: 2024, value: 5.03 },
-  ],
+// Pertumbuhan PDB, % per tahun, BPS.
+export const GDP_GROWTH = [
+  { year: 2015, value: 4.88 }, { year: 2016, value: 5.03 },
+  { year: 2017, value: 5.07 }, { year: 2018, value: 5.17 },
+  { year: 2019, value: 5.02 }, { year: 2020, value: -2.07 },
+  { year: 2021, value: 3.70 }, { year: 2022, value: 5.31 },
+  { year: 2023, value: 5.05 }, { year: 2024, value: 5.03 },
+];
 
-  // Inflasi tahunan Desember ke Desember, persen (BPS).
-  inflation: [
-    { year: 2019, value: 2.72 }, { year: 2020, value: 1.68 },
-    { year: 2021, value: 1.87 }, { year: 2022, value: 5.51 },
-    { year: 2023, value: 2.61 }, { year: 2024, value: 1.57 },
-  ],
+// Inflasi tahunan (yoy Desember), %, BPS.
+export const INFLATION = [
+  { year: 2015, value: 3.35 }, { year: 2016, value: 3.02 },
+  { year: 2017, value: 3.61 }, { year: 2018, value: 3.13 },
+  { year: 2019, value: 2.72 }, { year: 2020, value: 1.68 },
+  { year: 2021, value: 1.87 }, { year: 2022, value: 5.51 },
+  { year: 2023, value: 2.61 }, { year: 2024, value: 1.57 },
+];
 
-  // Struktur PDB menurut lapangan usaha 2023, persen (BPS, dibulatkan).
-  gdpStructure2023: [
-    { sector: "Industri pengolahan", value: 18.7 },
-    { sector: "Perdagangan", value: 12.9 },
-    { sector: "Pertanian & kehutanan", value: 12.5 },
-    { sector: "Pertambangan", value: 10.5 },
-    { sector: "Konstruksi", value: 10.5 },
-    { sector: "Transportasi & gudang", value: 6.2 },
-    { sector: "Informasi & komunikasi", value: 4.2 },
-    { sector: "Jasa keuangan", value: 4.2 },
-    { sector: "Lainnya", value: 20.3 },
-  ],
+// Pangsa sektor terhadap PDB 2024, %, BPS. "Lainnya" = sisa dari 100%.
+export const SECTORS = [
+  { name: "Industri pengolahan", value: 18.7 },
+  { name: "Perdagangan", value: 13.0 },
+  { name: "Pertanian, kehutanan & perikanan", value: 12.5 },
+  { name: "Konstruksi", value: 10.0 },
+  { name: "Pertambangan & penggalian", value: 9.0 },
+  { name: "Sektor lainnya", value: 36.8 },
+];
 
-  economyFacts: [
-    { label: "PDB harga berlaku 2024", value: "Rp22.139 triliun", note: "BPS" },
-    { label: "PDB per kapita 2024", value: "Rp78,6 juta", note: "Sekitar US$4.900 · BPS" },
-    { label: "Ekspor 2023", value: "US$258,8 miliar", note: "BPS" },
-    { label: "Impor 2023", value: "US$221,9 miliar", note: "Surplus dagang US$36,9 miliar · BPS" },
-  ],
+// Indeks Pembangunan Manusia 2015–2024, BPS.
+export const HDI = [
+  { year: 2015, value: 69.55 }, { year: 2016, value: 70.18 },
+  { year: 2017, value: 70.81 }, { year: 2018, value: 71.39 },
+  { year: 2019, value: 71.92 }, { year: 2020, value: 71.94 },
+  { year: 2021, value: 72.29 }, { year: 2022, value: 72.91 },
+  { year: 2023, value: 74.39 }, { year: 2024, value: 75.02 },
+];
 
-  // Tingkat pengangguran terbuka, Februari, persen (Sakernas BPS).
-  unemploymentFeb: [
-    { year: 2020, value: 4.99 }, { year: 2021, value: 6.26 },
-    { year: 2022, value: 5.83 }, { year: 2023, value: 5.45 },
-    { year: 2024, value: 4.82 },
-  ],
+// Tingkat kemiskinan, % penduduk, Maret, BPS.
+export const POVERTY = [
+  { year: 2015, value: 11.13 }, { year: 2016, value: 10.86 },
+  { year: 2017, value: 10.64 }, { year: 2018, value: 9.82 },
+  { year: 2019, value: 9.41 }, { year: 2020, value: 9.78 },
+  { year: 2021, value: 10.14 }, { year: 2022, value: 9.54 },
+  { year: 2023, value: 9.36 }, { year: 2024, value: 9.03 },
+];
 
-  // Persentase penduduk miskin, Maret, persen (Susenas BPS).
-  povertyMarch: [
-    { year: 2019, value: 9.41 }, { year: 2020, value: 9.78 },
-    { year: 2021, value: 10.14 }, { year: 2022, value: 9.54 },
-    { year: 2023, value: 9.36 }, { year: 2024, value: 9.03 },
-  ],
-
-  // Indeks Pembangunan Manusia (BPS).
-  hdi: [
-    { year: 2020, value: 71.94 }, { year: 2021, value: 72.29 },
-    { year: 2022, value: 72.91 }, { year: 2023, value: 74.39 },
-    { year: 2024, value: 75.02 },
-  ],
-
-  // Prevalensi stunting balita, persen (SSGI/SKI, Kemenkes & BPS).
-  stunting: [
-    { year: 2019, value: 27.7 }, { year: 2021, value: 24.4 },
-    { year: 2022, value: 21.6 }, { year: 2023, value: 21.5 },
-  ],
-
-  // Rata-rata lama sekolah penduduk 25 tahun ke atas, tahun (BPS).
-  schoolingYears: [
-    { year: 2019, value: 8.34 }, { year: 2020, value: 8.48 },
-    { year: 2021, value: 8.54 }, { year: 2022, value: 8.69 },
-    { year: 2023, value: 8.77 },
-  ],
-
-  wellbeingFacts: [
-    { label: "Umur harapan hidup 2023", value: "73,9 tahun", note: "Metode berbasis Long Form SP2020 · BPS" },
-    { label: "Harapan lama sekolah 2023", value: "13,13 tahun", note: "BPS" },
-    { label: "Angka melek huruf 15+", value: "96,0%", note: "2023 · BPS" },
-    { label: "Angka kematian bayi", value: "16,9 per 1.000", note: "Kelahiran hidup · BPS 2022" },
-    { label: "Rasio Gini Maret 2024", value: "0,379", note: "Ketimpangan pengeluaran · BPS" },
-  ],
-
-  sources: [
-    { name: "Sensus Penduduk 2020 (SP2020)", by: "Badan Pusat Statistik", detail: "Sensus lengkap seluruh penduduk Indonesia per September 2020: 270,20 juta jiwa. Dasar tabel provinsi, struktur umur, dan rasio demografi di situs ini." },
-    { name: "Proyeksi Penduduk Indonesia", by: "Badan Pusat Statistik", detail: "Proyeksi resmi berbasis SP2020; angka pertengahan 2024 sebesar 281,6 juta jiwa dipakai sebagai angka penduduk terkini." },
-    { name: "Berita Resmi Statistik — PDB", by: "Badan Pusat Statistik", detail: "Rilis triwulanan dan tahunan pertumbuhan ekonomi, PDB harga berlaku, dan PDB per kapita." },
-    { name: "Sakernas Februari 2024", by: "Badan Pusat Statistik", detail: "Survei Angkatan Kerja Nasional: tingkat pengangguran terbuka 4,82% pada Februari 2024." },
-    { name: "Profil Kemiskinan & Gini", by: "Badan Pusat Statistik", detail: "Hasil Susenas Maret: kemiskinan 9,03% (25,22 juta jiwa) dan rasio Gini 0,379 pada Maret 2024." },
-    { name: "Indeks Pembangunan Manusia 2024", by: "Badan Pusat Statistik", detail: "IPM Indonesia 75,02 pada 2024, kategori tinggi; dihitung dari umur harapan hidup, pendidikan, dan pengeluaran per kapita." },
-    { name: "Survei Kesehatan Indonesia 2023", by: "Kemenkes RI", detail: "Prevalensi stunting balita 21,5% pada 2023, melanjutkan penurunan dari 27,7% pada 2019." },
-    { name: "Long Form SP2020", by: "Badan Pusat Statistik", detail: "Sensus sampel lanjutan: angka kelahiran total (TFR) 2,18 dan dasar metode baru umur harapan hidup." },
-  ],
+export const WELFARE = {
+  poverty: { value: "9,03%", note: "Maret 2024, BPS — 25,22 juta penduduk miskin" },
+  povertyLine: { value: "≈ Rp 583 ribu", note: "Garis kemiskinan per kapita per bulan, Maret 2024, BPS" },
+  unemployment: { value: "4,82%", note: "TPT Februari 2024, Sakernas BPS — 7,20 juta penganggur" },
+  gini: { value: "0,379", note: "Rasio Gini Maret 2024, BPS (0 = merata sempurna, 1 = timpang sempurna)" },
+  ruralPoverty: { value: "≈ 11,8%", note: "Kemiskinan perdesaan, Maret 2024 (perkiraan BPS)" },
+  urbanPoverty: { value: "≈ 7,1%", note: "Kemiskinan perkotaan, Maret 2024 (perkiraan BPS)" },
 };
+
+export const HEALTH_EDU = {
+  hdi: { value: "75,02", note: "IPM 2024, BPS — kategori tinggi" },
+  lifeExpectancy: { value: "≈ 74 tahun", note: "Harapan hidup saat lahir, 2024, BPS" },
+  stunting: { value: "19,8%", note: "Prevalensi stunting balita, SSGI 2024" },
+  meanSchooling: { value: "≈ 9,1 tahun", note: "Rata-rata lama sekolah penduduk 25+, 2024, BPS" },
+  expectedSchooling: { value: "≈ 13,2 tahun", note: "Harapan lama sekolah, 2024, BPS" },
+  literacy: { value: "≈ 97%", note: "Angka melek huruf penduduk 15+, 2024, BPS" },
+};
+
+// 38 provinsi. Penduduk = juta jiwa, Sensus Penduduk 2020 (dibulatkan).
+// IPM 2024 dan kemiskinan Maret 2024 hanya diisi bila diyakini; selebihnya null ("—").
+export const PROVINCES = [
+  { name: "Aceh", pop: 5.3, ipm: null, poverty: null },
+  { name: "Sumatera Utara", pop: 14.8, ipm: null, poverty: null },
+  { name: "Sumatera Barat", pop: 5.5, ipm: null, poverty: null },
+  { name: "Riau", pop: 6.5, ipm: null, poverty: null },
+  { name: "Jambi", pop: 3.5, ipm: null, poverty: null },
+  { name: "Sumatera Selatan", pop: 8.5, ipm: null, poverty: null },
+  { name: "Bengkulu", pop: 2.0, ipm: null, poverty: null },
+  { name: "Lampung", pop: 9.0, ipm: null, poverty: null },
+  { name: "Kepulauan Bangka Belitung", pop: 1.5, ipm: null, poverty: null },
+  { name: "Kepulauan Riau", pop: 2.1, ipm: null, poverty: null },
+  { name: "DKI Jakarta", pop: 10.6, ipm: 83.0, poverty: null },
+  { name: "Jawa Barat", pop: 48.3, ipm: null, poverty: 7.5 },
+  { name: "Jawa Tengah", pop: 36.5, ipm: null, poverty: null },
+  { name: "DI Yogyakarta", pop: 3.7, ipm: 81.0, poverty: null },
+  { name: "Jawa Timur", pop: 40.7, ipm: null, poverty: null },
+  { name: "Banten", pop: 11.9, ipm: null, poverty: null },
+  { name: "Bali", pop: 4.3, ipm: 78.0, poverty: null },
+  { name: "Nusa Tenggara Barat", pop: 5.3, ipm: null, poverty: null },
+  { name: "Nusa Tenggara Timur", pop: 5.3, ipm: null, poverty: null },
+  { name: "Kalimantan Barat", pop: 5.4, ipm: null, poverty: null },
+  { name: "Kalimantan Tengah", pop: 2.7, ipm: null, poverty: null },
+  { name: "Kalimantan Selatan", pop: 4.1, ipm: null, poverty: null },
+  { name: "Kalimantan Timur", pop: 3.8, ipm: null, poverty: null },
+  { name: "Kalimantan Utara", pop: 0.7, ipm: null, poverty: null },
+  { name: "Sulawesi Utara", pop: 2.6, ipm: null, poverty: null },
+  { name: "Sulawesi Tengah", pop: 3.0, ipm: null, poverty: null },
+  { name: "Sulawesi Selatan", pop: 9.1, ipm: null, poverty: null },
+  { name: "Sulawesi Tenggara", pop: 2.6, ipm: null, poverty: null },
+  { name: "Gorontalo", pop: 1.2, ipm: null, poverty: null },
+  { name: "Sulawesi Barat", pop: 1.5, ipm: null, poverty: null },
+  { name: "Maluku", pop: 1.9, ipm: null, poverty: null },
+  { name: "Maluku Utara", pop: 1.3, ipm: null, poverty: null },
+  { name: "Papua Barat", pop: 1.1, ipm: null, poverty: null },
+  { name: "Papua", pop: 4.3, ipm: null, poverty: 23.0 },
+  { name: "Papua Selatan", pop: 0.5, ipm: null, poverty: null },
+  { name: "Papua Tengah", pop: 1.3, ipm: null, poverty: null },
+  { name: "Papua Pegunungan", pop: 1.4, ipm: 62.0, poverty: null },
+  { name: "Papua Barat Daya", pop: 0.6, ipm: null, poverty: null },
+];
+
+export const SOURCES = [
+  { name: "Sensus Penduduk 2020", desc: "BPS — jumlah penduduk, struktur umur, sebaran provinsi. Dilaksanakan tiap 10 tahun." },
+  { name: "Proyeksi Penduduk 2024", desc: "BPS — penduduk pertengahan tahun 2024 sebesar 281,6 juta jiwa." },
+  { name: "SUPAS 2015", desc: "Survei Penduduk Antar Sensus, BPS — penduduk 2015 sebesar 255,5 juta jiwa." },
+  { name: "Sakernas", desc: "Survei Angkatan Kerja Nasional, BPS — tingkat pengangguran terbuka (TPT) Februari 2024 sebesar 4,82%." },
+  { name: "Susenas", desc: "Survei Sosial Ekonomi Nasional, BPS — kemiskinan Maret 2024 sebesar 9,03% dan rasio Gini 0,379." },
+  { name: "SSGI 2024", desc: "Survei Status Gizi Indonesia, Kementerian Kesehatan — prevalensi stunting balita 19,8%." },
+  { name: "Publikasi BPS", desc: "Pertumbuhan ekonomi, inflasi, IPM, dan pangsa sektor PDB — bps.go.id." },
+];

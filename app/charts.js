@@ -1,195 +1,140 @@
-// NusaData — penggambar grafik di atas <canvas>, tanpa pustaka luar.
-// Semua fungsi menerima elemen canvas dan data berlabel; skala mengikuti
-// rasio piksel perangkat agar garis dan teks tetap tajam.
+// charts.js — grafik canvas digambar sendiri, tanpa library.
+// Semua fungsi menerima <canvas> dan menggambar dengan ketajaman devicePixelRatio.
 
-const ChartPalette = {
-  teal: "#0b5563",
-  tealSoft: "#3d8a99",
-  amber: "#e8a33d",
-  rust: "#c65b39",
-  green: "#4c956c",
-  ink: "#40505a",
-  grid: "#e3ddd0",
-  donut: ["#0b5563", "#e8a33d", "#4c956c", "#c65b39", "#3d8a99", "#8a6fb8", "#b8a24a", "#7a8b99", "#d9d3c3"],
-};
+const TEAL = "#0f4c4a";
+const TEAL_DARK = "#0b3d3a";
+const AMBER = "#f2a93b";
+const GRID = "#e3ddd0";
+const MUTED = "#5c6d6a";
+
+function fmt(n, decimals) {
+  return n.toFixed(decimals === undefined ? 1 : decimals).replace(".", ",").replace("-", "−");
+}
 
 function setupCanvas(canvas, cssHeight) {
-  const ratio = window.devicePixelRatio || 1;
-  const width = canvas.clientWidth;
-  canvas.width = Math.round(width * ratio);
-  canvas.height = Math.round(cssHeight * ratio);
-  canvas.style.height = cssHeight + "px";
+  const dpr = window.devicePixelRatio || 1;
+  const width = canvas.clientWidth || canvas.parentElement.clientWidth || 600;
+  const height = cssHeight;
+  canvas.width = Math.round(width * dpr);
+  canvas.height = Math.round(height * dpr);
+  canvas.style.height = height + "px";
   const ctx = canvas.getContext("2d");
-  ctx.setTransform(ratio, 0, 0, ratio, 0, 0);
-  return { ctx, width, height: cssHeight };
+  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  ctx.clearRect(0, 0, width, height);
+  return { ctx, width, height };
 }
 
-function niceCeil(value) {
-  const pow = Math.pow(10, Math.floor(Math.log10(value)));
-  const unit = value / pow;
-  const steps = [1, 1.5, 2, 2.5, 3, 4, 5, 7.5, 10];
-  const step = steps.find((s) => unit <= s) || 10;
-  return step * pow;
-}
+// Grafik garis dengan sumbu, grid, titik, dan label nilai.
+export function lineChart(canvas, series, opts) {
+  const o = opts || {};
+  const decimals = o.decimals === undefined ? 1 : o.decimals;
+  const h = o.height || 260;
+  const { ctx, width, height } = setupCanvas(canvas, h);
+  const padL = 46, padR = 14, padT = 16, padB = 30;
+  const plotW = width - padL - padR, plotH = height - padT - padB;
+  const values = series.map((p) => p.value);
+  let min = Math.min.apply(null, values), max = Math.max.apply(null, values);
+  if (min === max) { min -= 1; max += 1; }
+  const span = max - min, pad = span * 0.15;
+  min -= pad; max += pad;
+  const x = (i) => padL + (series.length === 1 ? plotW / 2 : (i / (series.length - 1)) * plotW);
+  const y = (v) => padT + (1 - (v - min) / (max - min)) * plotH;
 
-function formatTick(value) {
-  return String(Math.round(value * 10) / 10).replace(".", ",");
-}
-
-// Grafik garis untuk seri tahunan: points = [{year, value}].
-function drawLineChart(canvas, points, options) {
-  const { ctx, width, height } = setupCanvas(canvas, options.height || 240);
-  const pad = { left: 44, right: 14, top: 14, bottom: 28 };
-  const plotW = width - pad.left - pad.right;
-  const plotH = height - pad.top - pad.bottom;
-  const values = points.map((p) => p.value);
-  let min = Math.min(0, Math.min(...values));
-  let max = niceCeil(Math.max(...values) * 1.05);
-  if (options.min !== undefined) min = options.min;
-  if (options.max !== undefined) max = options.max;
-  const x = (i) => pad.left + (plotW * i) / (points.length - 1);
-  const y = (v) => pad.top + plotH - ((v - min) / (max - min)) * plotH;
-
-  ctx.font = "11px system-ui, sans-serif";
-  ctx.strokeStyle = ChartPalette.grid;
-  ctx.fillStyle = ChartPalette.ink;
-  ctx.lineWidth = 1;
-  for (let g = 0; g <= 4; g++) {
-    const gv = min + ((max - min) * g) / 4;
-    const gy = y(gv);
-    ctx.beginPath(); ctx.moveTo(pad.left, gy); ctx.lineTo(width - pad.right, gy); ctx.stroke();
-    ctx.textAlign = "right";
-    ctx.fillText(formatTick(gv), pad.left - 6, gy + 4);
+  ctx.font = "11px -apple-system, sans-serif";
+  ctx.textAlign = "right"; ctx.textBaseline = "middle";
+  const ticks = 4;
+  for (let t = 0; t <= ticks; t++) {
+    const v = min + ((max - min) * t) / ticks;
+    const yy = y(v);
+    ctx.strokeStyle = GRID; ctx.lineWidth = 1;
+    ctx.beginPath(); ctx.moveTo(padL, yy); ctx.lineTo(width - padR, yy); ctx.stroke();
+    ctx.fillStyle = MUTED;
+    ctx.fillText(fmt(v, decimals) + (o.unit || ""), padL - 8, yy);
   }
-  if (min < 0) {
-    ctx.strokeStyle = ChartPalette.ink;
-    ctx.beginPath(); ctx.moveTo(pad.left, y(0)); ctx.lineTo(width - pad.right, y(0)); ctx.stroke();
-  }
-  ctx.textAlign = "center";
-  points.forEach((p, i) => {
-    if (points.length > 8 && i % 2 === 1 && i !== points.length - 1) return;
-    ctx.fillText(String(p.year), x(i), height - 8);
-  });
-
+  // Area di bawah garis
+  const grad = ctx.createLinearGradient(0, padT, 0, padT + plotH);
+  grad.addColorStop(0, "rgba(15,76,74,.18)");
+  grad.addColorStop(1, "rgba(15,76,74,0)");
   ctx.beginPath();
-  points.forEach((p, i) => { if (i === 0) ctx.moveTo(x(i), y(p.value)); else ctx.lineTo(x(i), y(p.value)); });
-  ctx.strokeStyle = options.color || ChartPalette.teal;
-  ctx.lineWidth = 2.5;
-  ctx.stroke();
-  ctx.lineTo(x(points.length - 1), y(min)); ctx.lineTo(x(0), y(min)); ctx.closePath();
-  ctx.fillStyle = (options.color || ChartPalette.teal) + "22";
-  ctx.fill();
-
-  ctx.fillStyle = options.color || ChartPalette.teal;
-  points.forEach((p, i) => {
-    ctx.beginPath(); ctx.arc(x(i), y(p.value), 3.2, 0, Math.PI * 2); ctx.fill();
-  });
-  const last = points[points.length - 1];
-  ctx.font = "bold 12px system-ui, sans-serif";
-  ctx.textAlign = "right";
-  ctx.fillStyle = ChartPalette.ink;
-  ctx.fillText(formatTick(last.value) + (options.unit || ""), x(points.length - 1), y(last.value) - 10);
-}
-
-// Grafik batang vertikal; nilai negatif digambar ke bawah sumbu nol dengan warna berbeda.
-function drawBarChart(canvas, points, options) {
-  const { ctx, width, height } = setupCanvas(canvas, options.height || 240);
-  const pad = { left: 40, right: 10, top: 16, bottom: 28 };
-  const plotW = width - pad.left - pad.right;
-  const plotH = height - pad.top - pad.bottom;
-  const values = points.map((p) => p.value);
-  const max = niceCeil(Math.max(...values) * 1.08);
-  const min = Math.min(0, Math.min(...values));
-  const y = (v) => pad.top + ((max - v) / (max - min)) * plotH;
-  const slot = plotW / points.length;
-  const barW = Math.min(38, slot * 0.58);
-
-  ctx.font = "11px system-ui, sans-serif";
-  ctx.strokeStyle = ChartPalette.grid;
-  ctx.fillStyle = ChartPalette.ink;
-  for (let g = 0; g <= 4; g++) {
-    const gv = min + ((max - min) * g) / 4;
-    ctx.beginPath(); ctx.moveTo(pad.left, y(gv)); ctx.lineTo(width - pad.right, y(gv)); ctx.stroke();
-    ctx.textAlign = "right";
-    ctx.fillText(formatTick(gv), pad.left - 6, y(gv) + 4);
+  series.forEach((p, i) => { if (i === 0) ctx.moveTo(x(i), y(p.value)); else ctx.lineTo(x(i), y(p.value)); });
+  ctx.lineTo(x(series.length - 1), padT + plotH); ctx.lineTo(x(0), padT + plotH); ctx.closePath();
+  ctx.fillStyle = grad; ctx.fill();
+  // Garis
+  ctx.beginPath();
+  series.forEach((p, i) => { if (i === 0) ctx.moveTo(x(i), y(p.value)); else ctx.lineTo(x(i), y(p.value)); });
+  ctx.strokeStyle = o.color || TEAL; ctx.lineWidth = 2.5; ctx.lineJoin = "round"; ctx.stroke();
+  // Garis nol bila ada nilai negatif
+  if (min < 0 && max > 0) {
+    ctx.strokeStyle = "#b3402e"; ctx.lineWidth = 1; ctx.setLineDash([4, 4]);
+    ctx.beginPath(); ctx.moveTo(padL, y(0)); ctx.lineTo(width - padR, y(0)); ctx.stroke();
+    ctx.setLineDash([]);
   }
-  ctx.strokeStyle = ChartPalette.ink;
-  ctx.beginPath(); ctx.moveTo(pad.left, y(0)); ctx.lineTo(width - pad.right, y(0)); ctx.stroke();
-
-  points.forEach((p, i) => {
-    const cx = pad.left + slot * i + slot / 2;
-    ctx.fillStyle = p.value < 0 ? ChartPalette.rust : (options.color || ChartPalette.teal);
-    const top = y(Math.max(p.value, 0));
-    const bottom = y(Math.min(p.value, 0));
-    ctx.fillRect(cx - barW / 2, top, barW, Math.max(2, bottom - top));
-    ctx.fillStyle = ChartPalette.ink;
-    ctx.textAlign = "center";
-    ctx.font = "bold 10.5px system-ui, sans-serif";
-    ctx.fillText(formatTick(p.value), cx, (p.value < 0 ? bottom + 14 : top - 5));
-    ctx.font = "11px system-ui, sans-serif";
-    ctx.fillText(String(p.year), cx, height - 8);
+  // Titik + label tahun + label nilai
+  ctx.textAlign = "center";
+  series.forEach((p, i) => {
+    ctx.beginPath(); ctx.arc(x(i), y(p.value), 3.5, 0, Math.PI * 2);
+    ctx.fillStyle = "#fff"; ctx.fill();
+    ctx.strokeStyle = o.color || TEAL; ctx.lineWidth = 2; ctx.stroke();
+    ctx.fillStyle = MUTED; ctx.textBaseline = "top";
+    ctx.fillText(String(p.year), x(i), height - 20);
+    if (o.showValues !== false) {
+      ctx.fillStyle = TEAL_DARK; ctx.font = "bold 11px -apple-system, sans-serif";
+      ctx.textBaseline = "bottom";
+      ctx.fillText(fmt(p.value, decimals) + (o.unit || ""), x(i), y(p.value) - 8);
+      ctx.font = "11px -apple-system, sans-serif";
+    }
   });
 }
 
-// Batang horizontal terurut untuk peringkat (mis. provinsi terpadat penduduknya).
-function drawRankBars(canvas, rows, options) {
-  const rowH = 27;
-  const { ctx, width, height } = setupCanvas(canvas, rows.length * rowH + 8);
-  const labelW = Math.min(150, width * 0.34);
-  const max = rows[0].value;
-  ctx.font = "12px system-ui, sans-serif";
-  rows.forEach((row, i) => {
-    const top = 4 + i * rowH;
-    ctx.fillStyle = ChartPalette.ink;
-    ctx.textAlign = "left";
-    ctx.fillText(row.name, 0, top + 16, labelW - 8);
-    const barW = ((width - labelW - 64) * row.value) / max;
-    ctx.fillStyle = i === 0 ? ChartPalette.amber : ChartPalette.teal;
-    ctx.fillRect(labelW, top + 4, Math.max(3, barW), 15);
-    ctx.fillStyle = ChartPalette.ink;
-    ctx.font = "bold 12px system-ui, sans-serif";
-    ctx.fillText(formatTick(row.value) + (options.unit || ""), labelW + Math.max(3, barW) + 7, top + 16);
-    ctx.font = "12px system-ui, sans-serif";
+// Bar horizontal dengan label nilai di ujung bar.
+export function barChart(canvas, items, opts) {
+  const o = opts || {};
+  const decimals = o.decimals === undefined ? 1 : o.decimals;
+  const rowH = 34, h = items.length * rowH + 14;
+  const { ctx, width, height } = setupCanvas(canvas, h);
+  const padL = 150, padR = 64, padT = 8;
+  const max = Math.max.apply(null, items.map((d) => d.value));
+  ctx.font = "12px -apple-system, sans-serif";
+  items.forEach((d, i) => {
+    const yTop = padT + i * rowH;
+    const barW = ((width - padL - padR) * d.value) / max;
+    ctx.fillStyle = TEAL_DARK; ctx.textAlign = "right"; ctx.textBaseline = "middle";
+    ctx.fillText(d.name, padL - 10, yTop + 12);
+    ctx.fillStyle = d.color || TEAL;
+    const r = 5;
+    ctx.beginPath();
+    ctx.roundRect(padL, yTop, Math.max(barW, 2), 24, r);
+    ctx.fill();
+    ctx.fillStyle = TEAL_DARK; ctx.textAlign = "left"; ctx.font = "bold 12px -apple-system, sans-serif";
+    ctx.fillText(fmt(d.value, decimals) + (o.unit || ""), padL + barW + 8, yTop + 12);
+    ctx.font = "12px -apple-system, sans-serif";
   });
   return height;
 }
 
-// Donat sederhana dengan legenda digambar sebagai teks di samping kanan.
-function drawDonut(canvas, parts, options) {
-  const { ctx, width, height } = setupCanvas(canvas, options.height || 230);
-  const total = parts.reduce((sum, p) => sum + p.value, 0);
-  const radius = Math.min(height / 2 - 12, 96);
-  const cx = radius + 14;
-  const cy = height / 2;
+// Donat + legenda HTML di samping (legenda digambar pemanggil).
+export function donutChart(canvas, segments) {
+  const size = 220;
+  const { ctx, width, height } = setupCanvas(canvas, size);
+  const cx = width / 2, cy = height / 2, r = 82, inner = 54;
+  const total = segments.reduce((s, d) => s + d.value, 0);
   let angle = -Math.PI / 2;
-  parts.forEach((p, i) => {
-    const sweep = (p.value / total) * Math.PI * 2;
+  ctx.font = "bold 12px -apple-system, sans-serif";
+  segments.forEach((d) => {
+    const sweep = (d.value / total) * Math.PI * 2;
     ctx.beginPath();
-    ctx.moveTo(cx, cy);
-    ctx.arc(cx, cy, radius, angle, angle + sweep);
+    ctx.arc(cx, cy, r, angle, angle + sweep);
+    ctx.arc(cx, cy, inner, angle + sweep, angle, true);
     ctx.closePath();
-    ctx.fillStyle = ChartPalette.donut[i % ChartPalette.donut.length];
-    ctx.fill();
+    ctx.fillStyle = d.color; ctx.fill();
+    const mid = angle + sweep / 2;
+    const lx = cx + Math.cos(mid) * (r + 16), ly = cy + Math.sin(mid) * (r + 16);
+    ctx.fillStyle = TEAL_DARK; ctx.textAlign = "center"; ctx.textBaseline = "middle";
+    ctx.fillText(d.share, lx, ly);
     angle += sweep;
   });
-  ctx.beginPath();
-  ctx.arc(cx, cy, radius * 0.58, 0, Math.PI * 2);
-  ctx.fillStyle = "#ffffff";
-  ctx.fill();
-  ctx.fillStyle = ChartPalette.ink;
-  ctx.font = "bold 13px system-ui, sans-serif";
-  ctx.textAlign = "center";
-  ctx.fillText(options.center || "", cx, cy + 4);
-
-  const legendX = cx + radius + 22;
-  ctx.textAlign = "left";
-  parts.forEach((p, i) => {
-    const ly = cy - ((parts.length - 1) * 21) / 2 + i * 21;
-    ctx.fillStyle = ChartPalette.donut[i % ChartPalette.donut.length];
-    ctx.fillRect(legendX, ly - 9, 11, 11);
-    ctx.fillStyle = ChartPalette.ink;
-    ctx.font = "12px system-ui, sans-serif";
-    const share = Math.round((p.value / total) * 1000) / 10;
-    ctx.fillText(p.label + " — " + formatTick(p.value) + (options.unit || "") + " (" + formatTick(share) + "%)", legendX + 17, ly + 2, width - legendX - 17);
-  });
+  ctx.fillStyle = TEAL_DARK; ctx.font = "bold 15px Georgia, serif";
+  ctx.fillText("270,2 jt", cx, cy - 8);
+  ctx.font = "11px -apple-system, sans-serif"; ctx.fillStyle = MUTED;
+  ctx.fillText("penduduk 2020", cx, cy + 12);
 }

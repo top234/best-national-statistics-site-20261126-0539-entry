@@ -1,222 +1,336 @@
-// NusaData — tampilan tiap halaman. Setiap view mengembalikan HTML dan
-// fungsi mount yang menggambar grafik serta menghidupkan kontrolnya.
+// views.js — satu fungsi render per halaman (hash route).
+// Setiap render menulis HTML ke #view lalu memasang grafik canvas + kontrolnya.
 
-function kpiCards(items) {
-  return items.map((k) =>
-    '<article class="kpi"><p class="kpi-label">' + k.label + '</p>' +
-    '<p class="kpi-value">' + k.value + '</p>' +
-    '<p class="kpi-note">' + k.note + "</p></article>"
-  ).join("");
+import { KPIS, POPULATION, TOP_PROVINCES, AGE_STRUCTURE, DEMOGRAPHY, GDP_GROWTH, INFLATION, SECTORS, HDI, POVERTY, WELFARE, HEALTH_EDU, PROVINCES, SOURCES } from "./data.js";
+import { lineChart, barChart, donutChart } from "./charts.js";
+import { buildMap } from "./map.js";
+
+function id(n, d) {
+  return n.toFixed(d === undefined ? 1 : d).replace(".", ",").replace("-", "−");
+}
+function kpiCard(k) {
+  return '<article class="kpi"><div class="k-label">' + k.label + '</div>' +
+    '<div class="k-value">' + k.value + (k.unit ? " <small>" + k.unit + "</small>" : "") + "</div>" +
+    '<div class="k-src">' + k.src + "</div></article>";
+}
+function srcLine(text) { return '<p class="src">Sumber: ' + text + "</p>"; }
+
+// ---------- Beranda ----------
+export function renderHome(el) {
+  el.innerHTML =
+    '<section class="hero">' +
+      "<h1>Indonesia dalam angka: 281,6 juta jiwa, satu data.</h1>" +
+      '<p class="lede">NusaData merangkum statistik nasional Indonesia — penduduk, ekonomi, provinsi, kesehatan, pendidikan, dan kesejahteraan — dari publikasi BPS, Sensus Penduduk 2020, Sakernas, dan Susenas.</p>' +
+      '<div class="hero-big">' +
+        '<div class="big"><b>281,6 jt</b><span>penduduk, pertengahan 2024</span></div>' +
+        '<div class="big"><b>38</b><span>provinsi</span></div>' +
+        '<div class="big"><b>5,03%</b><span>pertumbuhan ekonomi 2024</span></div>' +
+        '<div class="big"><b>75,02</b><span>Indeks Pembangunan Manusia</span></div>' +
+      "</div>" +
+      '<div class="hero-cta"><a class="btn" href="#/penduduk">Lihat penduduk</a>' +
+      '<a class="btn ghost" href="#/provinsi">Jelajahi 38 provinsi</a></div>' +
+    "</section>" +
+    '<div class="kpi-strip">' + KPIS.map(kpiCard).join("") + "</div>" +
+    '<div class="grid-2">' +
+      '<section class="card"><h2>Penduduk 1971–2024</h2>' +
+        '<p class="stat-note">Juta jiwa. Penduduk naik lebih dari dua kali lipat dalam 53 tahun; laju tumbuhnya melambat.</p>' +
+        '<canvas class="chart" id="ch-pop" height="260" aria-label="Grafik garis penduduk 1971 sampai 2024"></canvas>' +
+        srcLine("Sensus Penduduk 1971–2020, SUPAS 2015, Proyeksi Penduduk 2024, BPS.") +
+        '<p><a href="#/penduduk">Selengkapnya di halaman Penduduk →</a></p></section>' +
+      '<section class="card"><h2>Lima provinsi terpadat</h2>' +
+        '<p class="stat-note">Juta jiwa. Tiga provinsi di Jawa menampung lebih dari 125 juta jiwa — sekitar 46% penduduk Indonesia.</p>' +
+        '<canvas class="chart" id="ch-top" aria-label="Bar chart lima provinsi terpadat"></canvas>' +
+        srcLine("Sensus Penduduk 2020, BPS.") +
+        '<p><a href="#/provinsi">Tabel 38 provinsi →</a></p></section>' +
+    "</div>" +
+    '<div class="grid-2">' +
+      '<section class="card"><h2>Sorotan ekonomi</h2><ul class="spot-list">' +
+        "<li><b>PDB tumbuh 5,03%</b> pada 2024 — konsumsi rumah tangga dan investasi penopang utama.<span class='tag'>Ekonomi</span></li>" +
+        "<li><b>Inflasi 1,57%</b> pada Desember 2024 — terendah dalam satu dekade terakhir.<span class='tag'>Harga</span></li>" +
+        "<li><b>Industri pengolahan</b> penyumbang PDB terbesar, sekitar 18,7%.<span class='tag'>Sektor</span></li>" +
+      "</ul><p><a href='#/ekonomi'>Halaman Ekonomi →</a></p></section>" +
+      '<section class="card"><h2>Sorotan kesejahteraan</h2><ul class="spot-list">' +
+        "<li><b>Kemiskinan 9,03%</b> pada Maret 2024 — terendah sepanjang sejarah pencatatan.<span class='tag'>Kemiskinan</span></li>" +
+        "<li><b>Pengangguran 4,82%</b> pada Februari 2024 — 7,20 juta orang.<span class='tag'>Tenaga kerja</span></li>" +
+        "<li><b>IPM 75,02</b> pada 2024 — kategori tinggi, naik dari 69,55 pada 2015.<span class='tag'>Pembangunan</span></li>" +
+      "</ul><p><a href='#/kesejahteraan'>Halaman Kesejahteraan →</a></p></section>" +
+    "</div>";
+  lineChart(el.querySelector("#ch-pop"), POPULATION, { unit: " jt", height: 260 });
+  barChart(el.querySelector("#ch-top"), TOP_PROVINCES, { unit: " jt" });
 }
 
-function factList(items) {
-  return items.map((f) =>
-    '<div class="fact"><p class="fact-value">' + f.value + '</p>' +
-    '<p class="fact-label">' + f.label + '</p>' +
-    '<p class="fact-note">' + f.note + "</p></div>"
-  ).join("");
+// ---------- Penduduk ----------
+export function renderPenduduk(el) {
+  el.innerHTML =
+    "<h1>Penduduk</h1>" +
+    '<p class="page-intro">Dari 119,2 juta jiwa pada 1971 menjadi 281,6 juta pada 2024. Pertumbuhan melambat, dan mayoritas penduduk kini berada di usia produktif.</p>' +
+    '<section class="card"><h2>Jumlah penduduk menurut tahun</h2>' +
+      '<div class="controls" role="group" aria-label="Pilih rentang tahun">' +
+        '<button class="seg-btn" data-range="all">1971–2024</button>' +
+        '<button class="seg-btn" data-range="2000">2000–2024</button>' +
+        '<button class="seg-btn" data-range="2010">2010–2024</button>' +
+      "</div>" +
+      '<canvas class="chart" id="ch-poprange" height="280" aria-label="Grafik garis penduduk pada rentang terpilih"></canvas>' +
+      srcLine("Sensus Penduduk, SUPAS 2015, dan Proyeksi Penduduk 2024, BPS. Nilai 2024 adalah proyeksi pertengahan tahun.") +
+    "</section>" +
+    '<div class="grid-2">' +
+      '<section class="card"><h2>Struktur umur 2020</h2>' +
+        '<div style="display:flex;gap:18px;flex-wrap:wrap;align-items:center">' +
+          '<canvas id="ch-age" width="220" height="220" aria-label="Donat struktur umur 2020"></canvas>' +
+          '<div class="legend" style="flex-direction:column;gap:8px">' +
+            AGE_STRUCTURE.map((a) => '<span><i style="background:' + a.color + '"></i>' + a.label + " — " + id(a.value) + " jt (" + a.share + ")</span>").join("") +
+          "</div>" +
+        "</div>" +
+        srcLine("Sensus Penduduk 2020, BPS.") + "</section>" +
+      '<section class="card"><h2>Fakta demografi</h2><ul class="spot-list">' +
+        DEMOGRAPHY.map((d) => "<li><b>" + d.label + ": " + d.value + "</b><br><span class='stat-note'>" + d.note + "</span></li>").join("") +
+      "</ul></section>" +
+    "</div>";
+  const canvas = el.querySelector("#ch-poprange");
+  const draw = (from) => lineChart(canvas, POPULATION.filter((p) => p.year >= from), { unit: " jt", height: 280 });
+  const btns = Array.from(el.querySelectorAll(".seg-btn"));
+  const activate = (btn) => {
+    btns.forEach((b) => b.classList.toggle("on", b === btn));
+    draw(Number(btn.dataset.range === "all" ? 1971 : btn.dataset.range));
+  };
+  btns.forEach((b) => {
+    b.className = "seg-btn";
+    b.addEventListener("click", () => activate(b));
+  });
+  // Bungkus tombol dalam seg agar tampil sebagai pemilih
+  const group = el.querySelector(".controls");
+  const seg = document.createElement("span");
+  seg.className = "seg";
+  btns.forEach((b) => seg.appendChild(b));
+  group.appendChild(seg);
+  activate(btns[0]);
+  donutChart(el.querySelector("#ch-age"), AGE_STRUCTURE);
 }
 
-function panel(title, sourceNote, canvasId, extra) {
-  return '<section class="panel"><div class="panel-head"><h3>' + title + "</h3>" +
-    '<p class="panel-source">' + sourceNote + "</p></div>" +
-    (extra || "") + '<canvas id="' + canvasId + '" class="chart"></canvas></section>';
+// ---------- Ekonomi ----------
+export function renderEkonomi(el) {
+  el.innerHTML =
+    "<h1>Ekonomi</h1>" +
+    '<p class="page-intro">Ekonomi Indonesia tumbuh sekitar 5% per tahun selama satu dekade terakhir, kecuali kontraksi −2,07% pada 2020 saat pandemi. Inflasi kembali rendah pada 2024.</p>' +
+    '<div class="kpi-strip" style="grid-template-columns:repeat(3,1fr)">' +
+      kpiCard({ label: "Pertumbuhan PDB 2024", value: "5,03", unit: "%", src: "BPS" }) +
+      kpiCard({ label: "Inflasi Des 2024", value: "1,57", unit: "%", src: "BPS" }) +
+      kpiCard({ label: "PDB per kapita 2024", value: "≈ Rp 78", unit: "jt/thn", src: "Perkiraan BPS" }) +
+    "</div>" +
+    '<section class="card"><h2>Pertumbuhan PDB 2015–2024</h2>' +
+      '<p class="stat-note">Persen per tahun. Kontraksi 2020 adalah dampak pandemi COVID-19; pemulihan penuh tercapai pada 2022.</p>' +
+      '<canvas class="chart" id="ch-gdp" height="260" aria-label="Grafik garis pertumbuhan PDB 2015 sampai 2024"></canvas>' +
+      srcLine("BPS.") + "</section>" +
+    '<div class="grid-2">' +
+      '<section class="card"><h2>Inflasi tahunan 2015–2024</h2>' +
+        '<p class="stat-note">Persen, year-on-year Desember. Lonjakan 2022 mengikuti kenaikan harga BBM bersubsidi.</p>' +
+        '<canvas class="chart" id="ch-inf" height="240" aria-label="Grafik garis inflasi 2015 sampai 2024"></canvas>' +
+        srcLine("BPS.") + "</section>" +
+      '<section class="card"><h2>Pangsa sektor terhadap PDB 2024</h2>' +
+        '<p class="stat-note">Persen. Industri pengolahan tetap penopang terbesar ekonomi Indonesia.</p>' +
+        '<canvas class="chart" id="ch-sec" aria-label="Bar chart pangsa sektor PDB"></canvas>' +
+        srcLine("Pangsa PDB 2024, BPS. Angka dibulatkan.") + "</section>" +
+    "</div>" +
+    '<section class="card"><h2>Catatan singkat</h2>' +
+      "<p>Konsumsi rumah tangga menyumbang lebih dari separuh PDB dari sisi pengeluaran, disusul investasi (pembentukan modal tetap bruto) dan belanja pemerintah. Dari sisi lapangan usaha, lima sektor di atas menyumbang sekitar 63% PDB; sisanya tersebar di jasa keuangan, transportasi, informasi-komunikasi, kesehatan, pendidikan, dan jasa lainnya.</p>" +
+      "<p>Pertumbuhan 5,03% pada 2024 dicapai di tengah inflasi yang rendah (1,57%) dan pengangguran yang menurun — kombinasi yang menjaga daya beli tetap tumbuh.</p></section>";
+  lineChart(el.querySelector("#ch-gdp"), GDP_GROWTH, { unit: "%", decimals: 2, height: 260 });
+  lineChart(el.querySelector("#ch-inf"), INFLATION, { unit: "%", decimals: 2, height: 240 });
+  barChart(el.querySelector("#ch-sec"), SECTORS, { unit: "%" });
 }
 
-const Views = {
+// ---------- Provinsi ----------
+function fmtCell(v, suffix) {
+  if (v === null || v === undefined) return '<td class="num miss">—</td>';
+  return '<td class="num">' + (suffix === "%" ? "≈ " : suffix === "ipm" ? "≈ " : "") + id(v) + (suffix === "%" ? "%" : "") + "</td>";
+}
 
-  home: {
-    html() {
-      const top5 = NUSADATA.provinces2020.slice().sort((a, b) => b.value - a.value).slice(0, 5);
-      return (
-        '<section class="hero"><h2>Indonesia dalam angka yang bisa dipercaya</h2>' +
-        "<p>NusaData merangkum statistik resmi Indonesia — penduduk, ekonomi, provinsi, kesehatan, dan pendidikan — " +
-        "dengan sumber dan tahun yang jelas di setiap angka. Semua halaman bisa dijelajahi dari tautan di atas.</p></section>" +
-        '<section class="kpi-grid">' + kpiCards(NUSADATA.headline) + "</section>" +
-        '<div class="two-col">' +
-        panel("Penduduk Indonesia, 1971–2024 (juta jiwa)", "Sensus Penduduk & Proyeksi BPS", "home-pop") +
-        '<section class="panel"><div class="panel-head"><h3>Lima provinsi terpadat</h3>' +
-        '<p class="panel-source">Sensus Penduduk 2020 · juta jiwa</p></div>' +
-        '<canvas id="home-top5" class="chart"></canvas>' +
-        '<p class="panel-foot">Tiga provinsi di Jawa menampung 151,5 juta jiwa — 56% penduduk Indonesia. ' +
-        '<a href="#/provinsi">Lihat semua provinsi →</a></p></section></div>' +
-        '<section class="panel"><div class="panel-head"><h3>Jelajahi statistik</h3></div><div class="link-cards">' +
-        '<a class="link-card" href="#/penduduk"><strong>Penduduk</strong><span>270,20 juta jiwa pada SP2020, struktur umur, dan proyeksi 2024.</span></a>' +
-        '<a class="link-card" href="#/ekonomi"><strong>Ekonomi</strong><span>Pertumbuhan PDB, inflasi, perdagangan, dan kemiskinan.</span></a>' +
-        '<a class="link-card" href="#/provinsi"><strong>Provinsi</strong><span>Penduduk 34 provinsi hasil SP2020, bisa dicari dan diurutkan.</span></a>' +
-        '<a class="link-card" href="#/sejahtera"><strong>Kesehatan &amp; Pendidikan</strong><span>IPM, stunting, umur harapan hidup, dan lama sekolah.</span></a>' +
-        "</div></section>"
-      );
-    },
-    mount() {
-      drawLineChart(document.getElementById("home-pop"), NUSADATA.populationSeries, { unit: " jt" });
-      const top5 = NUSADATA.provinces2020.slice().sort((a, b) => b.value - a.value).slice(0, 5);
-      drawRankBars(document.getElementById("home-top5"), top5, { unit: " jt" });
-    },
-  },
+export function renderProvinsi(el) {
+  const state = { q: "", key: "pop", dir: -1, selected: "Jawa Barat", cmpA: "Jawa Barat", cmpB: "Jawa Timur" };
+  el.innerHTML =
+    "<h1>Provinsi</h1>" +
+    '<p class="page-intro">38 provinsi, dari Aceh sampai Papua Barat Daya. Cari, urutkan, klik baris untuk detail, atau bandingkan dua provinsi. Angka penduduk dari Sensus 2020; IPM dan kemiskinan hanya ditampilkan bila diyakini — selebihnya “—”.</p>' +
+    '<section class="card"><h2>Peta skematis Indonesia</h2>' +
+      '<div class="map-box" id="map-box"></div>' +
+      '<p class="map-note">Peta skematis — bentuk dan posisi pulau disederhanakan, bukan peta akurat. Titik amber: lima provinsi terpadat, klik untuk melihat detailnya.</p></section>' +
+    '<section class="card"><h2>Tabel 38 provinsi</h2>' +
+      '<div class="controls"><label class="f" for="q">Cari provinsi</label>' +
+      '<input type="search" id="q" placeholder="mis. Jawa, Papua, Bali…" autocomplete="off">' +
+      '<span class="hint" id="count"></span></div>' +
+      '<div class="table-wrap"><table class="data" id="prov-table">' +
+        "<thead><tr>" +
+        '<th><button data-sort="name">Provinsi <span class="arr"></span></button></th>' +
+        '<th class="num"><button data-sort="pop">Penduduk (jt) <span class="arr"></span></button></th>' +
+        '<th class="num"><button data-sort="ipm">IPM <span class="arr"></span></button></th>' +
+        '<th class="num"><button data-sort="poverty">Kemiskinan (%) <span class="arr"></span></button></th>' +
+        "</tr></thead><tbody></tbody></table></div>" +
+      '<p class="hint">Klik judul kolom untuk mengurutkan. Klik baris untuk detail. “—” berarti angka tidak ditampilkan karena tidak diyakini, bukan nol. Jumlah penduduk provinsi (dibulatkan) dapat berbeda dari total nasional 270,2 juta.</p>' +
+      srcLine("Penduduk: Sensus Penduduk 2020, BPS. IPM 2024 dan kemiskinan Maret 2024: BPS (nilai pendekatan, ditandai ≈).") +
+    "</section>" +
+    '<section class="card detail" id="detail"></section>' +
+    '<section class="card"><h2>Bandingkan dua provinsi</h2>' +
+      '<div class="controls">' +
+        '<label class="f" for="cmp-a">Provinsi A</label><select id="cmp-a"></select>' +
+        '<label class="f" for="cmp-b">Provinsi B</label><select id="cmp-b"></select>' +
+      "</div>" +
+      '<div class="compare-grid" id="cmp-out"></div></section>';
 
-  penduduk: {
-    html() {
-      return (
-        '<section class="page-head"><h2>Penduduk</h2>' +
-        "<p>Sensus Penduduk 2020 mencatat <strong>270.203.917 jiwa</strong>. Indonesia adalah negara berpenduduk " +
-        "terbanyak keempat di dunia, dan pertumbuhannya melambat: laju pertumbuhan 2010–2020 sebesar 1,25% per tahun, " +
-        "turun dari 1,49% pada dekade sebelumnya. Pilih rentang tahun untuk memperbesar grafik.</p></section>" +
-        panel("Jumlah penduduk menurut sensus & proyeksi (juta jiwa)", "BPS — Sensus Penduduk 1971–2020, SUPAS 2015, Proyeksi 2024", "pop-line",
-          '<div class="controls"><label>Rentang: <select id="pop-range">' +
-          '<option value="all">1971–2024</option><option value="recent">2000–2024</option></select></label></div>') +
-        '<div class="two-col">' +
-        panel("Struktur umur penduduk 2020", "SP2020 · juta jiwa", "pop-age") +
-        '<section class="panel"><div class="panel-head"><h3>Fakta demografi</h3>' +
-        '<p class="panel-source">Sensus Penduduk 2020 & Long Form SP2020</p></div>' +
-        '<div class="fact-grid">' + factList(NUSADATA.demographyFacts) + "</div></section></div>" +
-        '<section class="panel prose"><h3>Membaca angka penduduk</h3>' +
-        "<p>Bonus demografi sedang berlangsung: 70,7% penduduk berada pada usia produktif (15–64 tahun), sehingga rasio " +
-        "ketergantungan hanya 41,9 — terendah dalam sejarah Indonesia. Jendela ini diperkirakan menutup sekitar 2035, " +
-        "ketika penduduk lanjut usia bertambah cepat. Urbanisasi terus naik: 56,6% penduduk tinggal di perkotaan pada 2020, " +
-        "dan proyeksi BPS menempatkan angka pertengahan 2024 pada 281,6 juta jiwa.</p></section>"
-      );
-    },
-    mount() {
-      const canvas = document.getElementById("pop-line");
-      const draw = () => {
-        const range = document.getElementById("pop-range").value;
-        const points = range === "recent" ? NUSADATA.populationSeries.filter((p) => p.year >= 2000) : NUSADATA.populationSeries;
-        drawLineChart(canvas, points, { unit: " jt" });
-      };
-      document.getElementById("pop-range").addEventListener("change", draw);
-      draw();
-      drawDonut(document.getElementById("pop-age"),
-        NUSADATA.ageStructure2020.map((a) => ({ label: a.group, value: a.value })),
-        { unit: " jt", center: "270,2 jt" });
-    },
-  },
+  const tbody = el.querySelector("#prov-table tbody");
+  const countEl = el.querySelector("#count");
+  const detailEl = el.querySelector("#detail");
 
-  ekonomi: {
-    html() {
-      return (
-        '<section class="page-head"><h2>Ekonomi</h2>' +
-        "<p>Ekonomi Indonesia tumbuh 5,03% pada 2024 — melanjutkan pemulihan penuh dari kontraksi pandemi 2020 (−2,07%). " +
-        "Inflasi terjaga di 1,57%, dan kemiskinan turun ke titik terendah di luar masa pandemi.</p></section>" +
-        '<div class="fact-strip">' + factList(NUSADATA.economyFacts) + "</div>" +
-        '<div class="two-col">' +
-        panel("Pertumbuhan PDB tahunan (%)", "BPS — Produk Domestik Bruto", "eco-growth") +
-        panel("Inflasi tahunan, Desember (%)", "BPS — Indeks Harga Konsumen", "eco-inflation") +
-        "</div>" +
-        '<div class="two-col">' +
-        panel("Struktur PDB menurut lapangan usaha 2023", "BPS · persen, dibulatkan", "eco-structure") +
-        panel("Pengangguran terbuka, Februari (%)", "Sakernas BPS", "eco-unemployment") +
-        "</div>" +
-        panel("Penduduk miskin, Maret (%)", "Susenas BPS — garis kemiskinan nasional", "eco-poverty") +
-        '<section class="panel prose"><h3>Apa artinya bagi warga</h3>' +
-        "<p>Pertumbuhan di kisaran 5% dengan inflasi di bawah 2% berarti daya beli membaik pada 2024. Tantangan utamanya " +
-        "adalah kualitas pekerjaan: pengangguran terbuka turun ke 4,82%, tetapi lebih dari separuh pekerja masih berada " +
-        "di sektor informal. Kemiskinan turun ke 9,03% pada Maret 2024 — 25,22 juta jiwa — dan pemerintah menargetkan " +
-        "kemiskinan ekstrem mendekati nol.</p></section>"
-      );
-    },
-    mount() {
-      drawBarChart(document.getElementById("eco-growth"), NUSADATA.gdpGrowth, {});
-      drawLineChart(document.getElementById("eco-inflation"), NUSADATA.inflation, { color: ChartPalette.rust, unit: "%" });
-      drawDonut(document.getElementById("eco-structure"),
-        NUSADATA.gdpStructure2023.map((s) => ({ label: s.sector, value: s.value })),
-        { unit: "%", center: "PDB 2023" });
-      drawLineChart(document.getElementById("eco-unemployment"), NUSADATA.unemploymentFeb, { color: ChartPalette.green, unit: "%" });
-      drawLineChart(document.getElementById("eco-poverty"), NUSADATA.povertyMarch, { color: ChartPalette.amber, unit: "%" });
-    },
-  },
+  function sortedRows() {
+    const rows = PROVINCES.filter((p) => p.name.toLowerCase().includes(state.q));
+    const k = state.key;
+    rows.sort((a, b) => {
+      const av = a[k], bv = b[k];
+      if (av === null && bv === null) return 0;
+      if (av === null) return 1;
+      if (bv === null) return -1;
+      if (typeof av === "string") return state.dir * av.localeCompare(bv, "id");
+      return state.dir * (av - bv);
+    });
+    return rows;
+  }
+  function drawTable() {
+    const rows = sortedRows();
+    countEl.textContent = rows.length + " dari 38 provinsi";
+    tbody.innerHTML = rows.map((p) =>
+      '<tr data-name="' + p.name + '" class="' + (p.name === state.selected ? "sel" : "") + '">' +
+      "<td>" + p.name + "</td>" +
+      '<td class="num">' + id(p.pop) + "</td>" +
+      fmtCell(p.ipm, "ipm") + fmtCell(p.poverty, "%") +
+      "</tr>").join("");
+    el.querySelectorAll("#prov-table th .arr").forEach((s) => { s.textContent = ""; });
+    const active = el.querySelector('[data-sort="' + state.key + '"] .arr');
+    if (active) active.textContent = state.dir === 1 ? " ▲" : " ▼";
+  }
+  function drawDetail() {
+    const p = PROVINCES.find((x) => x.name === state.selected) || PROVINCES[0];
+    const gap = p.ipm === null && p.poverty === null;
+    detailEl.innerHTML = "<h3>" + p.name + "</h3>" +
+      '<div class="detail-grid">' +
+      '<div class="dv"><b>' + id(p.pop) + " jt</b><span>Penduduk (Sensus 2020)</span></div>" +
+      '<div class="dv"><b>' + (p.ipm === null ? "—" : "≈ " + id(p.ipm)) + '</b><span>IPM 2024, BPS</span></div>' +
+      '<div class="dv"><b>' + (p.poverty === null ? "—" : "≈ " + id(p.poverty) + "%") + "</b><span>Kemiskinan, Mar 2024</span></div>" +
+      "</div>" +
+      (gap ? "<p class='hint' style='margin-top:10px'>IPM dan kemiskinan provinsi ini belum ditampilkan — angka yang ditampilkan di situs ini hanya yang diyakini.</p>"
+        : "<p class='hint' style='margin-top:10px'>Tanda ≈ berarti nilai pendekatan yang dibulatkan.</p>");
+  }
+  function cmpCard(p, other, tag) {
+    const bigger = p.pop > other.pop;
+    return '<div class="vs-card"><h3>' + p.name + (bigger ? '<span class="vs-badge">lebih padat</span>' : "") + "</h3>" +
+      '<div class="vs-row"><span>Penduduk (jt, 2020)</span><b>' + id(p.pop) + "</b></div>" +
+      '<div class="vs-row"><span>IPM 2024</span><b>' + (p.ipm === null ? "—" : "≈ " + id(p.ipm)) + "</b></div>" +
+      '<div class="vs-row"><span>Kemiskinan Mar 2024</span><b>' + (p.poverty === null ? "—" : "≈ " + id(p.poverty) + "%") + "</b></div>" +
+      '<div class="vs-row"><span>Pangsa penduduk nasional</span><b>' + id((p.pop / 270.2) * 100) + "%</b></div>" +
+      "</div>";
+  }
+  function drawCompare() {
+    const a = PROVINCES.find((x) => x.name === state.cmpA);
+    const b = PROVINCES.find((x) => x.name === state.cmpB);
+    el.querySelector("#cmp-out").innerHTML = cmpCard(a, b) + cmpCard(b, a);
+  }
+  const selA = el.querySelector("#cmp-a"), selB = el.querySelector("#cmp-b");
+  [selA, selB].forEach((s) => {
+    s.innerHTML = PROVINCES.map((p) => '<option value="' + p.name + '">' + p.name + "</option>").join("");
+  });
+  selA.value = state.cmpA; selB.value = state.cmpB;
+  selA.addEventListener("change", () => { state.cmpA = selA.value; drawCompare(); });
+  selB.addEventListener("change", () => { state.cmpB = selB.value; drawCompare(); });
 
-  provinsi: {
-    html() {
-      return (
-        '<section class="page-head"><h2>Provinsi</h2>' +
-        "<p>Penduduk 34 provinsi hasil Sensus Penduduk 2020 (sebelum pemekaran Papua menjadi enam provinsi). " +
-        "Cari nama provinsi, atau urutkan tabelnya; grafik menampilkan sepuluh provinsi terpadat.</p></section>" +
-        panel("Sepuluh provinsi terpadat (juta jiwa)", "Sensus Penduduk 2020", "prov-top10") +
-        '<section class="panel"><div class="panel-head"><h3>Semua provinsi</h3>' +
-        '<p class="panel-source">SP2020 · total nasional 270,20 juta jiwa</p></div>' +
-        '<div class="controls"><label>Cari: <input id="prov-search" type="search" placeholder="nama provinsi…"></label>' +
-        '<label>Urutkan: <select id="prov-sort">' +
-        '<option value="desc">Penduduk terbanyak</option><option value="asc">Penduduk tersedikit</option>' +
-        '<option value="name">Nama A–Z</option></select></label>' +
-        '<span id="prov-count" class="count-note"></span></div>' +
-        '<div class="table-wrap"><table class="data-table"><thead><tr>' +
-        "<th>Provinsi</th><th>Penduduk (juta)</th><th>Porsi dari nasional</th>" +
-        '</tr></thead><tbody id="prov-body"></tbody></table></div></section>'
-      );
-    },
-    mount() {
-      const top10 = NUSADATA.provinces2020.slice().sort((a, b) => b.value - a.value).slice(0, 10);
-      drawRankBars(document.getElementById("prov-top10"), top10, { unit: " jt" });
-      const body = document.getElementById("prov-body");
-      const count = document.getElementById("prov-count");
-      const render = () => {
-        const query = document.getElementById("prov-search").value.trim().toLowerCase();
-        const sort = document.getElementById("prov-sort").value;
-        let rows = NUSADATA.provinces2020.filter((p) => p.name.toLowerCase().includes(query));
-        rows = rows.slice().sort((a, b) =>
-          sort === "name" ? a.name.localeCompare(b.name) : sort === "asc" ? a.value - b.value : b.value - a.value);
-        body.innerHTML = rows.map((p) => {
-          const share = (p.value / 270.2) * 100;
-          return "<tr><td>" + p.name + "</td><td class='num'>" + formatTick(p.value) + "</td>" +
-            "<td><span class='share-bar' style='width:" + Math.max(2, share * 3) + "px'></span>" + formatTick(Math.round(share * 10) / 10) + "%</td></tr>";
-        }).join("");
-        count.textContent = rows.length + " dari 34 provinsi";
-      };
-      document.getElementById("prov-search").addEventListener("input", render);
-      document.getElementById("prov-sort").addEventListener("change", render);
-      render();
-    },
-  },
+  el.querySelector("#q").addEventListener("input", (e) => { state.q = e.target.value.trim().toLowerCase(); drawTable(); });
+  el.querySelectorAll("#prov-table th button").forEach((btn) => {
+    btn.addEventListener("click", () => {
+      const k = btn.dataset.sort;
+      if (state.key === k) state.dir *= -1; else { state.key = k; state.dir = k === "name" ? 1 : -1; }
+      drawTable();
+    });
+  });
+  tbody.addEventListener("click", (e) => {
+    const tr = e.target.closest("tr");
+    if (!tr) return;
+    state.selected = tr.dataset.name;
+    drawTable(); drawDetail();
+    detailEl.scrollIntoView({ behavior: "smooth", block: "nearest" });
+  });
 
-  sejahtera: {
-    html() {
-      return (
-        '<section class="page-head"><h2>Kesehatan &amp; Pendidikan</h2>' +
-        "<p>IPM Indonesia mencapai 75,02 pada 2024 — kategori tinggi. Umur harapan hidup naik ke 73,9 tahun dan " +
-        "stunting turun hampir separuhnya dalam lima tahun, tetapi rata-rata lama sekolah baru 8,77 tahun: " +
-        "rata-rata warga dewasa tamat SMP kelas tiga.</p></section>" +
-        '<div class="two-col">' +
-        panel("Indeks Pembangunan Manusia", "BPS — skala 0–100", "wel-hdi") +
-        panel("Stunting balita (%)", "SSGI 2019–2022 & SKI 2023, Kemenkes", "wel-stunting") +
-        "</div>" +
-        '<div class="two-col">' +
-        panel("Rata-rata lama sekolah (tahun)", "BPS — penduduk 25 tahun ke atas", "wel-school") +
-        '<section class="panel"><div class="panel-head"><h3>Indikator lain</h3>' +
-        '<p class="panel-source">BPS & Kemenkes</p></div>' +
-        '<div class="fact-grid">' + factList(NUSADATA.wellbeingFacts) + "</div></section></div>" +
-        '<section class="panel prose"><h3>Cara memakai angka ini</h3>' +
-        "<p>Untuk keluarga: stunting yang turun ke 21,5% berarti program gizi bekerja, tetapi satu dari lima balita " +
-        "masih mengalaminya — posyandu setempat adalah pintu pertama intervensi. Untuk pelajar dan orang tua: harapan " +
-        "lama sekolah 13,13 tahun menunjukkan anak yang masuk SD hari ini berpeluang menamatkan SMA dan mulai kuliah; " +
-        "mengejar rata-rata lama sekolah di atas 9 tahun adalah syarat Indonesia keluar dari jebakan pendapatan menengah.</p></section>"
-      );
-    },
-    mount() {
-      drawLineChart(document.getElementById("wel-hdi"), NUSADATA.hdi, { min: 65, unit: "" });
-      drawBarChart(document.getElementById("wel-stunting"), NUSADATA.stunting, { color: ChartPalette.rust });
-      drawLineChart(document.getElementById("wel-school"), NUSADATA.schoolingYears, { color: ChartPalette.green, min: 7, unit: " th" });
-    },
-  },
+  buildMap(el.querySelector("#map-box"), (name) => {
+    state.selected = name;
+    drawTable(); drawDetail();
+    detailEl.scrollIntoView({ behavior: "smooth", block: "nearest" });
+  });
+  drawTable(); drawDetail(); drawCompare();
+}
 
-  sumber: {
-    html() {
-      const rows = NUSADATA.sources.map((s) =>
-        '<article class="source-item"><h3>' + s.name + '</h3><p class="source-by">' + s.by + "</p><p>" + s.detail + "</p></article>"
-      ).join("");
-      return (
-        '<section class="page-head"><h2>Sumber &amp; Metode</h2>' +
-        "<p>NusaData tidak mengadakan survei sendiri. Semua angka berasal dari publikasi statistik resmi yang tercantum " +
-        "di bawah ini, dan setiap grafik menyebut sumber serta tahunnya. Angka dibulatkan untuk tampilan; nilai resmi " +
-        "yang mengikat adalah yang terbit di publikasi sumbernya (bps.go.id dan kemkes.go.id).</p></section>" +
-        '<section class="panel"><div class="source-list">' + rows + "</div></section>" +
-        '<section class="panel prose"><h3>Catatan pembacaan</h3>' +
-        "<p>Sensus Penduduk 2020 memakai 34 provinsi; Papua kemudian dimekarkan menjadi enam provinsi sehingga Indonesia " +
-        "kini memiliki 38 provinsi. Seri kemiskinan dan pengangguran adalah potret Maret dan Februari pada tahunnya. " +
-        "Umur harapan hidup 2023 memakai metode baru berbasis Long Form SP2020, sehingga tidak sepenuhnya sebanding " +
-        "dengan seri lama. Situs ini karya independen untuk menjelajahi statistik publik, bukan situs resmi BPS.</p></section>"
-      );
-    },
-    mount() {},
-  },
-};
+// ---------- Kesehatan & Pendidikan ----------
+export function renderKesehatan(el) {
+  el.innerHTML =
+    "<h1>Kesehatan &amp; Pendidikan</h1>" +
+    '<p class="page-intro">IPM Indonesia 75,02 pada 2024 — kategori tinggi. Harapan hidup sekitar 74 tahun, stunting turun ke 19,8%, dan anak Indonesia kini rata-rata menempuh 13,2 tahun sekolah.</p>' +
+    '<div class="grid-3">' +
+      '<article class="card"><div class="k-label">IPM 2024</div><div class="kpi-big">' + HEALTH_EDU.hdi.value + '</div><p class="stat-note">' + HEALTH_EDU.hdi.note + "</p></article>" +
+      '<article class="card"><div class="k-label">Harapan hidup</div><div class="kpi-big">' + HEALTH_EDU.lifeExpectancy.value + '</div><p class="stat-note">' + HEALTH_EDU.lifeExpectancy.note + "</p></article>" +
+      '<article class="card"><div class="k-label">Stunting balita</div><div class="kpi-big">' + HEALTH_EDU.stunting.value + '</div><p class="stat-note">' + HEALTH_EDU.stunting.note + "</p></article>" +
+      '<article class="card"><div class="k-label">Rata-rata lama sekolah</div><div class="kpi-big">' + HEALTH_EDU.meanSchooling.value + '</div><p class="stat-note">' + HEALTH_EDU.meanSchooling.note + "</p></article>" +
+      '<article class="card"><div class="k-label">Harapan lama sekolah</div><div class="kpi-big">' + HEALTH_EDU.expectedSchooling.value + '</div><p class="stat-note">' + HEALTH_EDU.expectedSchooling.note + "</p></article>" +
+      '<article class="card"><div class="k-label">Melek huruf 15+</div><div class="kpi-big">' + HEALTH_EDU.literacy.value + '</div><p class="stat-note">' + HEALTH_EDU.literacy.note + "</p></article>" +
+    "</div>" +
+    '<section class="card"><h2>IPM 2015–2024: naik 5,47 poin dalam satu dekade</h2>' +
+      '<p class="stat-note">Indeks Pembangunan Manusia menggabungkan kesehatan (harapan hidup), pendidikan (lama sekolah), dan standar hidup (pengeluaran per kapita).</p>' +
+      '<canvas class="chart" id="ch-hdi" height="260" aria-label="Grafik garis IPM 2015 sampai 2024"></canvas>' +
+      srcLine("BPS.") + "</section>" +
+    '<section class="card"><h2>Yang berubah</h2><ul class="spot-list">' +
+      "<li><b>Stunting 19,8%</b> (2024) — turun dari sekitar 24% pada 2021. Target pemerintah: di bawah 14% pada 2029.</li>" +
+      "<li><b>Harapan lama sekolah 13,2 tahun</b> — anak yang masuk sekolah pada 2024 diperkirakan menempuh pendidikan hingga jenjang diploma.</li>" +
+      "<li><b>IPM naik tiap tahun</b> sejak 2015 kecuali perlambatan pada 2020 saat pandemi; lompatan terbesar terjadi pada 2023.</li>" +
+    "</ul></section>";
+  lineChart(el.querySelector("#ch-hdi"), HDI, { decimals: 2, height: 260 });
+}
+
+// ---------- Kesejahteraan ----------
+export function renderKesejahteraan(el) {
+  el.innerHTML =
+    "<h1>Kesejahteraan</h1>" +
+    '<p class="page-intro">Kemiskinan 9,03% pada Maret 2024 — terendah sepanjang sejarah pencatatan BPS. Namun kesenjangan desa–kota masih lebar, dan pengangguran 4,82% berarti 7,20 juta orang tanpa pekerjaan.</p>' +
+    '<div class="grid-3">' +
+      '<article class="card"><div class="k-label">Tingkat kemiskinan</div><div class="kpi-big">' + WELFARE.poverty.value + '</div><p class="stat-note">' + WELFARE.poverty.note + "</p></article>" +
+      '<article class="card"><div class="k-label">Garis kemiskinan</div><div class="kpi-big">' + WELFARE.povertyLine.value + '</div><p class="stat-note">' + WELFARE.povertyLine.note + "</p></article>" +
+      '<article class="card"><div class="k-label">Pengangguran (TPT)</div><div class="kpi-big">' + WELFARE.unemployment.value + '</div><p class="stat-note">' + WELFARE.unemployment.note + "</p></article>" +
+      '<article class="card"><div class="k-label">Rasio Gini</div><div class="kpi-big">' + WELFARE.gini.value + '</div><p class="stat-note">' + WELFARE.gini.note + "</p></article>" +
+      '<article class="card"><div class="k-label">Kemiskinan perdesaan</div><div class="kpi-big">' + WELFARE.ruralPoverty.value + '</div><p class="stat-note">' + WELFARE.ruralPoverty.note + "</p></article>" +
+      '<article class="card"><div class="k-label">Kemiskinan perkotaan</div><div class="kpi-big">' + WELFARE.urbanPoverty.value + '</div><p class="stat-note">' + WELFARE.urbanPoverty.note + "</p></article>" +
+    "</div>" +
+    '<div class="grid-2">' +
+      '<section class="card"><h2>Kemiskinan 2015–2024</h2>' +
+        '<p class="stat-note">Persen penduduk, Maret. Sempat naik pada 2020–2021 saat pandemi, lalu turun lagi hingga 9,03%.</p>' +
+        '<canvas class="chart" id="ch-pov" height="260" aria-label="Grafik garis kemiskinan 2015 sampai 2024"></canvas>' +
+        srcLine("BPS (Susenas).") + "</section>" +
+      '<section class="card"><h2>Kesenjangan desa–kota</h2>' +
+        '<p class="stat-note">Kemiskinan di perdesaan hampir 1,7 kali perkotaan. Garis kemiskinan desa lebih rendah karena biaya hidup lebih murah — namun peluang kerja dan layanan juga lebih terbatas.</p>' +
+        '<canvas class="chart" id="ch-rural" aria-label="Bar chart kemiskinan desa dan kota"></canvas>' +
+        srcLine("Maret 2024, perkiraan BPS.") + "</section>" +
+    "</div>" +
+    '<section class="card"><h2>Membaca angka ini</h2>' +
+      "<p><b>Garis kemiskinan</b> adalah batas pengeluaran per kapita per bulan untuk memenuhi kebutuhan dasar makanan dan non-makanan. Seseorang di bawah garis itu dihitung miskin. <b>Rasio Gini 0,379</b> berarti ketimpangan pengeluaran berada di tingkat sedang — membaik dari 0,408 pada 2015, namun ketimpangan kekayaan jauh lebih tinggi dari ketimpangan pengeluaran.</p></section>";
+  lineChart(el.querySelector("#ch-pov"), POVERTY, { unit: "%", decimals: 2, height: 260 });
+  barChart(el.querySelector("#ch-rural"), [
+    { name: "Perdesaan", value: 11.8 },
+    { name: "Perkotaan", value: 7.1 },
+  ], { unit: "%" });
+}
+
+// ---------- Sumber ----------
+export function renderSumber(el) {
+  el.innerHTML =
+    "<h1>Sumber &amp; metodologi</h1>" +
+    '<p class="page-intro">Semua angka di situs ini berasal dari publikasi resmi. NusaData bukan situs pemerintah dan tidak menggantikan publikasi BPS.</p>' +
+    '<section class="card"><h2>Daftar sumber</h2><ul class="src-list">' +
+      SOURCES.map((s) => "<li><b>" + s.name + "</b><br><span class='stat-note'>" + s.desc + "</span></li>").join("") +
+    "</ul></section>" +
+    '<section class="card"><h2>Catatan metodologi</h2>' +
+      "<p><b>Sensus Penduduk</b> dilaksanakan tiap 10 tahun dan mencacah seluruh penduduk. <b>SUPAS</b> adalah survei antar-sensus. <b>Proyeksi Penduduk</b> menghitung penduduk pertengahan tahun dari hasil sensus terakhir dengan asumsi kelahiran, kematian, dan migrasi.</p>" +
+      "<p><b>Sakernas</b> mengukur angkatan kerja dan pengangguran terbuka (TPT): penduduk yang tidak bekerja namun mencari pekerjaan. <b>Susenas</b> mengukur pengeluaran rumah tangga, dari situlah kemiskinan dan rasio Gini dihitung. <b>IPM</b> menggabungkan harapan hidup, lama sekolah, dan pengeluaran per kapita yang disesuaikan.</p>" +
+      "<p><b>Pembulatan:</b> angka di situs ini dibulatkan ke satu desimal. Jumlah komponen yang dibulatkan dapat berbeda dari totalnya. Angka bertanda ≈ adalah nilai pendekatan. Sel yang berisi “—” berarti angka tersebut sengaja tidak ditampilkan karena tidak diyakini, bukan nol.</p>" +
+      "<p>Untuk angka resmi lengkap dan terbaru, kunjungi <b>bps.go.id</b>.</p></section>";
+}

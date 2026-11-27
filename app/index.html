@@ -1,40 +1,38 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="id">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>NusaData — Statistik Indonesia: Penduduk, Ekonomi, Provinsi</title>
-<meta name="description" content="NusaData merangkum statistik resmi Indonesia dari BPS: penduduk, ekonomi, provinsi, kesehatan, dan pendidikan, lengkap dengan sumber dan tahun di setiap angka.">
-<link rel="stylesheet" href="style.css">
+<title>NusaData — Statistik Indonesia</title>
+<meta name="description" content="NusaData: angka-angka Indonesia — penduduk, ekonomi, provinsi, kesehatan, pendidikan, dan kesejahteraan. Data BPS, Sensus Penduduk 2020, Sakernas, dan Susenas.">
+<link rel="stylesheet" href="/style.css">
 </head>
 <body>
-<header class="site-head">
-  <div class="head-inner">
+<header class="topbar">
+  <div class="wrap topbar-in">
     <a class="brand" href="#/">
-      <span class="brand-mark">N</span>
-      <span class="brand-text"><strong>NusaData</strong><small>Statistik Indonesia dalam satu situs</small></span>
+      <span class="brand-mark" aria-hidden="true">◉</span>
+      <span class="brand-text"><strong>NusaData</strong><small>Statistik Indonesia</small></span>
     </a>
-    <nav class="main-nav" aria-label="Navigasi utama">
-      <a class="nav-link" href="#/">Beranda</a>
-      <a class="nav-link" href="#/penduduk">Penduduk</a>
-      <a class="nav-link" href="#/ekonomi">Ekonomi</a>
-      <a class="nav-link" href="#/provinsi">Provinsi</a>
-      <a class="nav-link" href="#/sejahtera">Kesehatan &amp; Pendidikan</a>
-      <a class="nav-link" href="#/sumber">Sumber</a>
+    <nav class="mainnav" aria-label="Navigasi utama">
+      <a href="#/" data-route="">Beranda</a>
+      <a href="#/penduduk" data-route="penduduk">Penduduk</a>
+      <a href="#/ekonomi" data-route="ekonomi">Ekonomi</a>
+      <a href="#/provinsi" data-route="provinsi">Provinsi</a>
+      <a href="#/kesehatan" data-route="kesehatan">Kesehatan &amp; Pendidikan</a>
+      <a href="#/kesejahteraan" data-route="kesejahteraan">Kesejahteraan</a>
+      <a href="#/sumber" data-route="sumber">Sumber</a>
     </nav>
   </div>
 </header>
-<main id="app" class="page"></main>
-<footer class="site-foot">
-  <div class="foot-inner">
-    <p><strong>NusaData</strong> — situs independen penjelajah statistik publik Indonesia. Seluruh angka berasal dari
-    publikasi Badan Pusat Statistik (BPS), Sensus Penduduk 2020, dan Kemenkes RI; setiap grafik menyebut sumber dan tahunnya.</p>
-    <p class="foot-links"><a href="#/sumber">Sumber &amp; metode</a> · <a href="#/provinsi">Data provinsi</a> · <a href="#/ekonomi">Indikator ekonomi</a></p>
+<main id="view" class="wrap" aria-live="polite"></main>
+<footer class="sitefoot">
+  <div class="wrap">
+    <p><strong>NusaData</strong> — ringkasan angka-angka Indonesia untuk dibaca cepat. Bukan situs resmi pemerintah.</p>
+    <p>Sumber utama: Badan Pusat Statistik (BPS) — Sensus Penduduk 2020, Proyeksi Penduduk 2024, Sakernas, Susenas, dan publikasi BPS lainnya. Angka dibulatkan; lihat publikasi BPS untuk angka resmi lengkap. Lihat halaman <a href="#/sumber">Sumber</a>.</p>
+    <p class="foot-note">Dibuat sebagai entri kompetisi situs statistik nasional. Data terakhir diperbarui: 2024.</p>
   </div>
 </footer>
-<script src="data.js"></script>
-<script src="charts.js"></script>
-<script src="views.js"></script>
-<script src="app.js"></script>
+<script type="module" src="/main.js"></script>
 </body>
 </html>

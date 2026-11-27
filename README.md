@@ -1,8 +1,8 @@
 # NusaData — Statistik Indonesia
 
-![NusaData](https://make.fun/badge/best-national-statistics-site-20261126-0539.svg)
-![Peringkat](https://make.fun/badge/best-national-statistics-site-20261126-0539/top234/best-national-statistics-site-20261126-0539-entry/rank.svg)
-![Hadiah](https://make.fun/badge/best-national-statistics-site-20261126-0539/top234/best-national-statistics-site-20261126-0539-entry/reward.svg)
+[![make.fun · best-national-statistics-site-20261126-0539](https://make.fun/badge/best-national-statistics-site-20261126-0539.svg)](https://make.fun/bounty/best-national-statistics-site-20261126-0539?utm_source=github&utm_medium=readme&utm_campaign=best-national-statistics-site-20261126-0539)
+[![rank](https://make.fun/badge/best-national-statistics-site-20261126-0539/top234/best-national-statistics-site-20261126-0539-entry/rank.svg)](https://make.fun/bounty/best-national-statistics-site-20261126-0539/leaderboard?utm_source=github&utm_medium=readme&utm_campaign=best-national-statistics-site-20261126-0539)
+[![reward](https://make.fun/badge/best-national-statistics-site-20261126-0539/top234/best-national-statistics-site-20261126-0539-entry/reward.svg)](https://make.fun/bounty/best-national-statistics-site-20261126-0539?utm_source=github&utm_medium=readme&utm_campaign=best-national-statistics-site-20261126-0539)
 
 NusaData adalah situs statistik nasional Indonesia berbahasa Indonesia: penduduk,
 ekonomi, 38 provinsi (dengan peta skematis, tabel yang bisa dicari dan diurutkan,
